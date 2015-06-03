@@ -677,9 +677,28 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
         }
     }
 
+    long timeStamp = System.currentTimeMillis();
+    int readSize = 0;
+    final long SLOW_CONSUMMER_TIME_INTERVAL = 1000;
+
     private void read(S session) {
+        int receiveLimit = session.getReceiveLimit();
         IoSessionConfig config = session.getConfig();
         int bufferSize = config.getReadBufferSize();
+
+        if (receiveLimit > 0) {
+            bufferSize = receiveLimit;
+        }
+
+        if (receiveLimit > 0 && readSize >= receiveLimit) {
+            if (timeStamp + SLOW_CONSUMMER_TIME_INTERVAL > System.currentTimeMillis()) {
+                return;
+            } else {
+                timeStamp = System.currentTimeMillis();
+                readSize = 0;
+            }
+        }
+
         IoBuffer buf = IoBuffer.allocate(bufferSize);
 
         final boolean hasFragmentation = session.getTransportMetadata().hasFragmentation();
@@ -694,7 +713,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
                     while ((ret = read(session, buf)) > 0) {
                         readBytes += ret;
 
-                        if (!buf.hasRemaining()) {
+                        if (!buf.hasRemaining() || (receiveLimit > 0 && receiveLimit <= readSize)) {
                             break;
                         }
                     }
@@ -705,6 +724,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
                         readBytes = ret;
                     }
                 }
+                readSize += readBytes;
             } finally {
                 buf.flip();
             }

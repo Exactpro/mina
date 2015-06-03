@@ -589,4 +589,8 @@ public interface IoSession {
      * @see #getLastIdleTime(IdleStatus)
      */
     long getLastBothIdleTime();
+
+    void setReceiveLimit(int receiveLimit);
+
+    int getReceiveLimit();
 }

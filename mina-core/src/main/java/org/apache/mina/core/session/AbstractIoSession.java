@@ -177,6 +177,8 @@ public abstract class AbstractIoSession implements IoSession {
 
     private boolean deferDecreaseReadBuffer = true;
 
+    private int receiveLimit;
+
     /**
      * TODO Add method documentation
      */
@@ -1148,6 +1150,14 @@ public abstract class AbstractIoSession implements IoSession {
      */
     public final long getLastBothIdleTime() {
         return getLastIdleTime(IdleStatus.BOTH_IDLE);
+    }
+
+    public void setReceiveLimit(int receiveLimit) {
+        this.receiveLimit = receiveLimit;
+    }
+
+    public int getReceiveLimit() {
+        return receiveLimit;
     }
 
     /**
