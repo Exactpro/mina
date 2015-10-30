@@ -7,6 +7,8 @@
 *.iml
 target/
 bin/
+.gradle/
+build/
 *.log
 .deployables
 .clover
