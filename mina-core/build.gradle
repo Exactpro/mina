@@ -1,0 +1,12 @@
+apply plugin: 'artifactory'
+
+version = '2.0.9-SNAPSHOT'
+
+archivesBaseName = "apache-mina-core"
+
+dependencies {
+    compile "org.slf4j:slf4j-api:${version_slf4j}"
+
+    testCompile 'org.easymock:easymockclassextension:3.2'
+    testCompile 'junit:junit:4.7'
+}
