@@ -1,0 +1,126 @@
+allprojects {
+    ext {
+    	sharedDir = file("${project.rootDir}/shared")
+
+    	// Set defaults
+    	if (!project.hasProperty("revision")) {
+    		revision = '00000' // mark local builds
+    	}
+    	if (!project.hasProperty('build_number')) {
+        	build_number = '0000' // mark local builds
+    	}
+    	if (!project.hasProperty('git_hash')) {
+            git_hash = 'local_build'
+        }
+    	//Lib versions
+    	version_slf4j = '1.7.5'
+    }
+}
+
+subprojects {
+    apply plugin: 'eclipse'
+    apply plugin: 'java'
+    apply plugin: 'maven'
+
+    group = 'com.exactprosystems.testtools'
+
+    sourceCompatibility = 1.7 //Java version compatibility to use when compiling Java source.
+    targetCompatibility = 1.7 //Java version to generate classes for.
+    compileJava.options.debugOptions.debugLevel = "source,lines,vars" // Include debug information
+
+
+    buildscript { // artifacrory plugin
+        repositories {
+    		maven {
+    			name 'MavenLocal' // for local builds only
+    			url sharedDir
+    		}
+    		maven { // for gradle fast plugin
+    			name 'Artifactory'
+    			url 'http://arti.exactpro.com/libs-snapshot'
+    		}
+            maven { url 'http://arti.exactpro.com/libs-release' }
+        }
+        dependencies {
+            classpath(group: 'org.jfrog.buildinfo',             name: 'build-info-extractor-gradle', 		version: '2.2.+')
+        }
+        
+        configurations.all {
+           resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+        }
+    }
+
+    repositories {
+        maven {
+            name 'MavenLocal' // for local builds only
+            url sharedDir
+        }
+        maven {
+            name 'Artifactory'
+            url 'http://arti.exactpro.com/libs-snapshot'
+        }
+    }
+
+    configurations {
+        all {
+    	    transitive = true
+    	    resolutionStrategy {
+    	    	// fail eagerly on version conflict (includes transitive dependencies)
+    		    // e.g. multiple different versions of the same dependency (group and name are equal)
+    		    failOnVersionConflict()
+
+    	    	// don't cache changing modules at all
+    	    	cacheChangingModulesFor 0, 'seconds'
+    	    }
+    	}
+    }
+
+    dependencies {
+        compile "org.slf4j:slf4j-api:${version_slf4j}"
+
+        testCompile 'org.easymock:easymockclassextension:3.2'
+        testCompile 'junit:junit:4.7'
+    }
+
+    eclipse {
+        project {
+            natures 'org.springsource.ide.eclipse.gradle.core.nature'
+            natures 'org.eclipse.jdt.core.javanature'
+            natures 'edu.umd.cs.findbugs.plugin.eclipse.findbugsNature'
+
+            buildCommand 'org.eclipse.jdt.core.javabuilder'
+        }
+        classpath {
+        	downloadSources = true
+        	downloadJavadoc = true
+
+            containers.clear()
+        	containers "org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-${sourceCompatibility}"
+        }
+    }
+
+    jar {
+    	manifest {
+        	attributes('Implementation-Version': "${revision}")
+        	attributes('Build_Number': "${build_number}")
+        	attributes('Git_Hash': "${git_hash}")
+        }
+    }
+
+    uploadArchives {
+        repositories.mavenDeployer {
+            uniqueVersion = false // publish non unique snapshots to local repository
+            repository(url: "file://${sharedDir}")
+        }
+        doFirst { sharedDir.mkdirs() }
+    }
+
+    task sourcesJar(type: Jar, dependsOn: classes) {
+        classifier = 'sources'
+        from sourceSets.main.allSource
+    }
+
+    artifacts {
+        archives sourcesJar
+    }
+}
