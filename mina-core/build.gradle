@@ -16,7 +16,7 @@
 
 apply plugin: 'artifactory'
 
-version = '2.0.9-SNAPSHOT'
+version = "2.0.9.${exactproVersion}"
 
 archivesBaseName = "apache-mina-core"
 
